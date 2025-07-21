@@ -5,6 +5,7 @@ import datetime
 import matplotlib.pyplot as plt
 import csv
 from collections import Counter
+import os
 
 API_KEY = "458863e38167a91e7725ec2a7449bcf9"
 city = input("Nhập tên thành phố (viết theo chuẩn quốc tế Vd: Hanoi , London , Tokyo ...) : ") #Viết theo chuẩn quốc tế
@@ -12,6 +13,7 @@ url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}
 url1 = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units=metric"
 response = requests.get(url)
 response1 = requests.get(url1)
+file_path = "weather_project.csv" #Lưu kết quả vào file csv
 
 weather_translation = {
     "Clear": "Trời quang, nắng",
@@ -326,14 +328,37 @@ if response.status_code == 200 and response1.status_code == 200 :
 
     main()
     #lưu trữ vào CSV
-    try :
-        with open("weather_project.csv",mode="w",newline ="",encoding="utf-8") as file :
-            writer = csv.writer(file)
-            writer.writerow(["Thành phố","Thời gian","Nhiệt độ","Độ ẩm","ID","Thời tiết hiện tại","Mô tả","Mức độ mây","Tốc độ",
-                             "Mô tả gió","Hướng gió","Thời gian mặt trời mọc", "Thời gian mặt trời lăn"])
-            writer.writerow([location_name,dt_object_local,temp_now,humidity_now,weather_id,weather_main,
+
+    #kiểm tra các dòng có bị trùng không
+
+    file_exists = os.path.isfile(file_path)
+    write_header = not file_exists or os.stat(file_path).st_size == 0
+    row = [location_name,dt_object_local,temp_now,humidity_now,weather_id,weather_main,
                              weather_desc,weather_cloud,wind_speed, classify_wind_speed(wind_speed),wind_direction(deg),
-                             sunrise_time,sunset_time])
+                             sunrise_time,sunset_time]
+
+    def check_for_duplicate_lines(row,filename="weather_project.csv"):
+        if not os.path.exists(filename): #kiểm tra file có tồn tại không
+            return False
+        with open(filename ,mode='r',encoding='utf-8') as f:
+            reader = csv.reader(f)
+            next(reader,None) #bỏ qua phần tiêu đề
+            change_row = [str(item) for item in row]
+            for items in reader :
+                if change_row == items :
+                    return True
+        return False # trả về giá trị False nêus không tím thấy bất kỳ hàng nào trùng khớp
+    try :
+        if not check_for_duplicate_lines(row,file_path):
+            with open(file_path,mode="a",newline ="",encoding="utf-8") as file :
+                writer = csv.writer(file)
+                if write_header :
+                    writer.writerow(["Thành phố","Thời gian","Nhiệt độ","Độ ẩm","ID","Thời tiết hiện tại","Mô tả","Mức độ mây","Tốc độ",
+                                     "Mô tả gió","Hướng gió","Thời gian mặt trời mọc", "Thời gian mặt trời lăn"])
+                writer.writerow(row)
+            print("Đã ghi vào file thành công ")
+        else :
+            print("Kết quả đã trong file , Không ghi lại ")
     except Exception as e :
         print("Lỗi khi lưu csv ",e)
 else :
