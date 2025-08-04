@@ -6,8 +6,14 @@ import matplotlib.pyplot as plt
 import csv
 from collections import Counter
 import os
+from dotenv import load_dotenv
 
-API_KEY = "458863e38167a91e7725ec2a7449bcf9"
+
+#tải biến môi trường từ file .env
+load_dotenv("OPEN_WEATHER_API_KEY.env.txt")
+
+API_KEY = os.getenv("OPEN_WEATHER_API_KEY")
+print(API_KEY)
 city = input("Nhập tên thành phố (viết theo chuẩn quốc tế Vd: Hanoi , London , Tokyo ...) : ") #Viết theo chuẩn quốc tế
 url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
 url1 = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units=metric"
@@ -362,5 +368,5 @@ if response.status_code == 200 and response1.status_code == 200 :
     except Exception as e :
         print("Lỗi khi lưu csv ",e)
 else :
-    print(f"Lỗi truy vấn , Mã trạng thái : {response.stanewtus_code}")
+    print(f"Lỗi truy vấn , Mã trạng thái : {response.status_code}")
     print(f"Nội dung lỗi : {response.text}")
