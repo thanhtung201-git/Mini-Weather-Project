@@ -1,5 +1,4 @@
 import requests
-#import sqlite3
 #import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
@@ -7,19 +6,40 @@ import csv
 from collections import Counter
 import os
 from dotenv import load_dotenv
+import logging
+from logging.handlers import TimedRotatingFileHandler
 
 
 #tải biến môi trường từ file .env
 load_dotenv("OPEN_WEATHER_API_KEY.env.txt")
 
 API_KEY = os.getenv("OPEN_WEATHER_API_KEY")
-print(API_KEY)
 city = input("Nhập tên thành phố (viết theo chuẩn quốc tế Vd: Hanoi , London , Tokyo ...) : ") #Viết theo chuẩn quốc tế
 url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
 url1 = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units=metric"
 response = requests.get(url)
 response1 = requests.get(url1)
 file_path = "weather_project.csv" #Lưu kết quả vào file csv
+
+#Tạo file log để lưu
+os.makedirs("logs",exist_ok=True)
+#Tạo logger
+logger = logging.getLogger("WeatherLogger")
+logger.setLevel(logging.INFO)
+
+# Handler xoay file log mỗi ngày (hoặc mỗi giờ)
+handler = TimedRotatingFileHandler(
+    "logs/weather.log",
+    when="midnight",      # "s"=giây, "m"=phút, "h"=giờ, "midnight"=0h mỗi ngày
+    interval=1,           # Mỗi 1 đơn vị 'when' tạo file mới
+    backupCount=7,        # Giữ 7 file log gần nhất
+    encoding="utf-8"
+)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 
 weather_translation = {
     "Clear": "Trời quang, nắng",
@@ -113,8 +133,8 @@ if response.status_code == 200 and response1.status_code == 200 :
     weather_data = response.json()
     forecast = response1.json()
     weather_forecast_data = forecast["list"]
-
-
+    logger.info("Bắt đầu chương trình Weather Project")
+    logger.info(f"Đang gọi API thời tiết cho thành phố {city}")
     #xác định vị trí xem xét thời tiết
     location_name = weather_data.get("name","")
     coord_lon = weather_data.get("coord",{}).get("lon",0)
@@ -367,6 +387,7 @@ if response.status_code == 200 and response1.status_code == 200 :
             print("Kết quả đã trong file , Không ghi lại ")
     except Exception as e :
         print("Lỗi khi lưu csv ",e)
+
 else :
-    print(f"Lỗi truy vấn , Mã trạng thái : {response.status_code}")
+    logger.error(f"Lỗi API: {response.status_code}")
     print(f"Nội dung lỗi : {response.text}")
